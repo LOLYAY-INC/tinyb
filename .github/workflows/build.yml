@@ -1,0 +1,57 @@
+name: Multi-Arch Build
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        # Define the architectures you want to target
+        arch: [x86_64, aarch64, armv7]
+        include:
+          - arch: x86_64
+            cpu: x86-64
+          - arch: aarch64
+            cpu: cortex-a53
+          - arch: armv7
+            cpu: arm1176jzf-s
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake libglib2.0-dev libdbus-1-dev build-essential
+
+      - name: Setup Java (for Bindings)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '11'
+
+      - name: Configure and Build
+        run: |
+          mkdir build
+          cd build
+          # Using the flags you provided
+          cmake -DBUILDJAVA=ON ..
+          make -j$(nproc)
+
+      - name: Install and Package
+        run: |
+          cd build
+          make install DESTDIR=./install_root
+          
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: tinyb-${{ matrix.arch }}
+          path: build/install_root/

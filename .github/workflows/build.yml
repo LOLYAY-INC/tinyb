@@ -42,7 +42,7 @@ jobs:
           mkdir build
           cd build
           # Using the flags you provided
-          cmake -DBUILDJAVA=ON ..
+          cmake ..
           make -j$(nproc)
 
       - name: Install and Package
